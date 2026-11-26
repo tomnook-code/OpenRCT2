@@ -369,7 +369,12 @@ static void ScenarioUpdateDayNightCycle()
     float currentDayNightCycle = gDayNightCycle;
     gDayNightCycle = 0;
 
-    if (gLegacyScene == LegacyScene::playing && Config::Get().general.dayNightCycle)
+    if (gLegacyScene == LegacyScene::playing && Config::Get().general.dayNightCycle && ParkDay::IsEnabled())
+    {
+        // Fork: lighting follows the park clock.
+        gDayNightCycle = ParkDay::GetNightAmount(getGameState());
+    }
+    else if (gLegacyScene == LegacyScene::playing && Config::Get().general.dayNightCycle)
     {
         float monthFraction = GetDate().GetMonthTicks() / static_cast<float>(kTicksPerMonth);
         if (monthFraction < (1 / 8.0f))

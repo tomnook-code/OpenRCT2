@@ -29,6 +29,7 @@
 #include "network/PlayerSetGroupAction.h"
 #include "park/LandBuyRightsAction.h"
 #include "park/LandSetRightsAction.h"
+#include "park/ParkDaySetAction.h"
 #include "park/ParkEntrancePlaceAction.h"
 #include "park/ParkEntranceRemoveAction.h"
 #include "park/ParkMarketingAction.h"
@@ -150,6 +151,7 @@ namespace OpenRCT2::GameActions
         REGISTER_ACTION(ParkSetLoanAction);
         REGISTER_ACTION(ParkSetNameAction);
         REGISTER_ACTION(ParkSetParameterAction);
+        REGISTER_ACTION(ParkDaySetAction);
         REGISTER_ACTION(ParkSetResearchFundingAction);
         REGISTER_ACTION(PeepPickupAction);
         REGISTER_ACTION(ParkEntrancePlaceAction);

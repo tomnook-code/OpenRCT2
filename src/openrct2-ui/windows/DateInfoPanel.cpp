@@ -20,6 +20,7 @@
 #include <openrct2/drawing/Rectangle.h>
 #include <openrct2/drawing/Text.h>
 #include <openrct2/localisation/Localisation.Date.h>
+#include <openrct2/park/ParkDay.h>
 #include <openrct2/ui/WindowManager.h>
 
 using namespace OpenRCT2::Drawing;
@@ -76,12 +77,21 @@ namespace OpenRCT2::Ui::Windows
             int32_t day = date.GetDay();
 
             auto colour = getHoverWidgetColour(WIDX_DATE);
-            StringId stringId = DateFormatStringFormatIds[Config::Get().general.dateFormat];
-            auto ft = Formatter();
-            ft.Add<StringId>(DateDayNames[day]);
-            ft.Add<int16_t>(month);
-            ft.Add<int16_t>(year);
-            drawText(rt, screenCoords, stringId, ft, { colour, TextAlignment::centre });
+            if (ParkDay::IsEnabled())
+            {
+                // Fork: show the park clock instead of the calendar date.
+                auto statusLine = ParkDay::FormatStatusLine(getGameState());
+                drawText(rt, screenCoords, statusLine, { colour, TextAlignment::centre });
+            }
+            else
+            {
+                StringId stringId = DateFormatStringFormatIds[Config::Get().general.dateFormat];
+                auto ft = Formatter();
+                ft.Add<StringId>(DateDayNames[day]);
+                ft.Add<int16_t>(month);
+                ft.Add<int16_t>(year);
+                drawText(rt, screenCoords, stringId, ft, { colour, TextAlignment::centre });
+            }
 
             // Figure out how much line height we have to work with.
             uint32_t line_height = FontGetLineHeight(FontStyle::medium);
@@ -96,7 +106,7 @@ namespace OpenRCT2::Ui::Windows
                 temperature = Weather::celsiusToFahrenheit(temperature);
                 format = STR_FAHRENHEIT_VALUE;
             }
-            ft = Formatter();
+            auto ft = Formatter();
             ft.Add<int16_t>(temperature);
             drawText(rt, screenCoords + ScreenCoordsXY{ 0, 6 }, format, ft);
             screenCoords.x += 30;
@@ -128,8 +138,11 @@ namespace OpenRCT2::Ui::Windows
             switch (widgetIndex)
             {
                 case WIDX_PANEL_OUTSET:
-                case WIDX_DATE:
                     ContextOpenWindow(WindowClass::recentNews);
+                    break;
+                case WIDX_DATE:
+                    // Fork: the date line opens the park day cycle window.
+                    ParkDayOpen();
                     break;
             }
         }

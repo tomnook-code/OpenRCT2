@@ -3022,6 +3022,16 @@ namespace OpenRCT2
             return;
         }
 
+        // Fork: realistic day cycle sends guests home when their planned stay ends or the park closes.
+        if (ParkDay::ShouldGuestGoHome(getGameState(), guest))
+        {
+            if (!guest.peepFlags.has(PeepFlag::leavingPark))
+            {
+                GuestLeavePark(guest);
+            }
+            return;
+        }
+
         /* Peeps that are happy enough, have enough energy and
          * (if appropriate) have enough money will always stay
          * in the park. */

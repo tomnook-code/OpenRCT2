@@ -100,6 +100,7 @@ namespace OpenRCT2
         setGameSpeed,
         setRestrictedScenery,
         setRideVisibility,
+        parkDaySet, // fork: realistic park day cycle
         count,
     };
 }

@@ -1719,7 +1719,7 @@ namespace OpenRCT2
                 return true;
             }
 
-            if (!gameState.park.flags.has(ParkFlag::parkOpen))
+            if (!gameState.park.flags.has(ParkFlag::parkOpen) || !ParkDay::IsGateOpen(gameState))
             {
                 guest->state = PeepState::leavingPark;
                 guest->var37 = 1;
@@ -1821,6 +1821,7 @@ namespace OpenRCT2
 
             auto& park = getGameState().park;
             park.totalAdmissions = AddClamp<uint64_t>(park.totalAdmissions, 1);
+            ParkDay::OnGuestAdmitted(getGameState());
 
             auto* windowMgr = Ui::GetWindowManager();
             windowMgr->InvalidateByNumber(WindowClass::parkInformation, 0);

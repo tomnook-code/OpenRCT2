@@ -197,6 +197,7 @@ namespace OpenRCT2::Network
             {
                 GameCommand::setParkName,
                 GameCommand::setParkOpen,
+                GameCommand::parkDaySet,
                 GameCommand::setParkEntranceFee,
                 GameCommand::setLandOwnership,
                 GameCommand::buyLandRights,
