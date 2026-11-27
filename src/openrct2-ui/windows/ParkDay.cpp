@@ -66,6 +66,7 @@ namespace OpenRCT2::Ui::Windows
         std::string _openText;
         std::string _lastEntryText;
         std::string _closeText;
+        std::string _dayLengthText;
 
         void setParameter(ParkDay::Parameter parameter, uint32_t value)
         {
@@ -113,9 +114,7 @@ namespace OpenRCT2::Ui::Windows
                     break;
                 case WIDX_DAY_LENGTH:
                 {
-                    // Cycle 6.8 min -> 13.7 min -> 27.3 min -> 6.8 min.
-                    uint32_t next = st.settings.dayLength == 1 ? 2 : st.settings.dayLength == 2 ? 4 : 1;
-                    setParameter(ParkDay::Parameter::dayLength, next);
+                    setParameter(ParkDay::Parameter::dayLength, ParkDay::GetNextDayLength(st.settings.dayLength));
                     break;
                 }
             }
@@ -162,7 +161,8 @@ namespace OpenRCT2::Ui::Windows
             widgets[WIDX_OPEN].setString(_openText.c_str());
             widgets[WIDX_LAST_ENTRY].setString(_lastEntryText.c_str());
             widgets[WIDX_CLOSE_TIME].setString(_closeText.c_str());
-            widgets[WIDX_DAY_LENGTH].setString(ParkDay::GetDayLengthName(st.settings.dayLength));
+            _dayLengthText = ParkDay::GetDayLengthName(st.settings.dayLength);
+            widgets[WIDX_DAY_LENGTH].setString(_dayLengthText.c_str());
 
             widgets[WIDX_SKIP_NIGHT].setString(st.skipTonight ? "Cancel skipping tonight" : "Skip to tomorrow morning");
 

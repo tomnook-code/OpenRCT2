@@ -37,6 +37,10 @@ namespace OpenRCT2::ParkDay
     // How long before opening the night fast-forward stops.
     constexpr uint16_t kMorningLeadMinutes = 60;
 
+    // Allowed day lengths, as multiples of the vanilla 6.8-minute month.
+    constexpr uint8_t kDayLengths[] = { 1, 2, 4, 8, 16, 24, 32 };
+    constexpr uint8_t kDefaultDayLength = 24;
+
     struct Settings
     {
         bool enabled = false;
@@ -44,8 +48,8 @@ namespace OpenRCT2::ParkDay
         uint16_t lastEntryMinute = 19 * 60; // 19:00
         uint16_t closeMinute = 21 * 60;     // 21:00
         bool autoSkipNight = false;
-        // Real time per park day at normal speed: 1 = 6.8 min, 2 = 13.7 min, 4 = 27.3 min.
-        uint8_t dayLength = 1;
+        // Multiplier on the vanilla month: real time per park day at normal speed is 6.8 min x dayLength.
+        uint8_t dayLength = kDefaultDayLength;
     };
 
     struct State
@@ -63,6 +67,7 @@ namespace OpenRCT2::ParkDay
         uint16_t lastMinute = 0xFFFF;
         uint32_t lastStragglers = 0;
         uint32_t lastStragglersOnRides = 0; // of lastStragglers, still riding or queuing
+        uint8_t dateSubTick = 0;            // game ticks since the calendar last moved (long days)
         bool skipTonight = false;
     };
 
@@ -86,7 +91,13 @@ namespace OpenRCT2::ParkDay
     // How far the calendar moves per game tick (vanilla: 4), and the resulting game ticks per park day.
     int32_t GetMonthTicksIncrement(const GameState_t& gameState);
     uint32_t GetTicksPerDay(const GameState_t& gameState);
-    const char* GetDayLengthName(uint8_t dayLength);
+    std::string GetDayLengthName(uint8_t dayLength);
+    uint8_t GetNextDayLength(uint8_t dayLength);
+
+    // Calendar pacing, called from DateUpdate: how many month ticks to add this game tick (0 = hold).
+    int32_t AdvanceCalendar(GameState_t& gameState);
+    // False on game ticks where a long day held the calendar still, so day/week/month starts fire once.
+    bool CalendarMovedThisTick(const GameState_t& gameState);
     uint32_t GetDayIndex(const GameState_t& gameState);
     int32_t GetDayOfWeek(const GameState_t& gameState); // 0 = Monday
     const char* GetDayOfWeekName(int32_t dayOfWeek);

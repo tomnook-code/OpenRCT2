@@ -55,38 +55,74 @@ namespace OpenRCT2::ParkDay
         return static_cast<uint16_t>((static_cast<uint32_t>(gameState.date.monthTicks) * kMinutesPerDay) >> 16);
     }
 
-    int32_t GetMonthTicksIncrement(const GameState_t& gameState)
+    static uint32_t EffectiveDayLength(const GameState_t& gameState)
     {
         const auto& s = gameState.parkDay.settings;
-        if (!s.enabled)
-            return kVanillaMonthTicksIncrement;
-        switch (s.dayLength)
-        {
-            case 2:
-                return 2;
-            case 4:
-                return 1;
-            default:
-                return kVanillaMonthTicksIncrement;
-        }
+        return s.enabled && s.dayLength > 0 ? s.dayLength : 1;
+    }
+
+    // Day lengths up to 4x shrink the per-tick step (4, 2, 1 month ticks per game tick).
+    // Longer days keep a step of 1 and hold the calendar still for (dayLength / 4 - 1) ticks in between.
+    int32_t GetMonthTicksIncrement(const GameState_t& gameState)
+    {
+        const auto k = EffectiveDayLength(gameState);
+        return k <= 4 ? static_cast<int32_t>(kVanillaMonthTicksIncrement / k) : 1;
+    }
+
+    static uint32_t GameTicksPerStep(const GameState_t& gameState)
+    {
+        const auto k = EffectiveDayLength(gameState);
+        return k <= 4 ? 1 : k / 4;
     }
 
     uint32_t GetTicksPerDay(const GameState_t& gameState)
     {
-        return kTicksPerMonth / GetMonthTicksIncrement(gameState);
+        return kTicksPerMonth / GetMonthTicksIncrement(gameState) * GameTicksPerStep(gameState);
     }
 
-    const char* GetDayLengthName(uint8_t dayLength)
+    int32_t AdvanceCalendar(GameState_t& gameState)
     {
-        switch (dayLength)
+        auto& st = gameState.parkDay;
+        const auto step = GameTicksPerStep(gameState);
+        if (step <= 1)
         {
-            case 2:
-                return "13.7 min";
-            case 4:
-                return "27.3 min";
-            default:
-                return "6.8 min";
+            st.dateSubTick = 0;
+            return GetMonthTicksIncrement(gameState);
         }
+        st.dateSubTick++;
+        if (st.dateSubTick >= step)
+        {
+            st.dateSubTick = 0;
+            return 1;
+        }
+        return 0;
+    }
+
+    bool CalendarMovedThisTick(const GameState_t& gameState)
+    {
+        return gameState.parkDay.dateSubTick == 0;
+    }
+
+    std::string GetDayLengthName(uint8_t dayLength)
+    {
+        // 16384 game ticks at 40 per second = 409.6 s per vanilla month.
+        const uint32_t seconds = 4096u * dayLength / 10u;
+        char buffer[32];
+        if (seconds < 3600)
+            std::snprintf(buffer, sizeof(buffer), "%u.%u min", seconds / 60, (seconds % 60) / 6);
+        else
+            std::snprintf(buffer, sizeof(buffer), "%u h %02u min", seconds / 3600, (seconds / 60) % 60);
+        return buffer;
+    }
+
+    uint8_t GetNextDayLength(uint8_t dayLength)
+    {
+        for (size_t i = 0; i + 1 < std::size(kDayLengths); i++)
+        {
+            if (kDayLengths[i] == dayLength)
+                return kDayLengths[i + 1];
+        }
+        return kDayLengths[0];
     }
 
     uint32_t GetDayIndex(const GameState_t& gameState)
@@ -406,7 +442,7 @@ namespace OpenRCT2::ParkDay
         switch (parameter)
         {
             case Parameter::dayLength:
-                return value == 1 || value == 2 || value == 4;
+                return std::find(std::begin(kDayLengths), std::end(kDayLengths), value) != std::end(kDayLengths);
             case Parameter::enabled:
             case Parameter::autoSkipNight:
             case Parameter::skipTonight:
@@ -430,6 +466,7 @@ namespace OpenRCT2::ParkDay
         // Changing the calendar speed must keep month ticks on a multiple of 4 so that
         // week, fortnight and month starts (wages, upkeep, finance) are still hit exactly.
         gameState.date.monthTicks = static_cast<uint16_t>(gameState.date.monthTicks & ~3u);
+        st.dateSubTick = 0;
 
         switch (parameter)
         {
