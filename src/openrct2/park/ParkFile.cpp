@@ -100,6 +100,7 @@ namespace OpenRCT2
         pluginStorage           = 0x38,
         preview                 = 0x39,
         parkDay                 = 0xD0, // fork: realistic park day cycle
+        hotels                  = 0xD1, // fork: overnight hotels
         packedObjects           = 0x80
         // clang-format on
     };
@@ -182,6 +183,7 @@ namespace OpenRCT2
             ReadWriteRestrictedObjectsChunk(gameState, os);
             ReadWritePluginStorageChunk(gameState, os);
             ReadWriteParkDayChunk(gameState, os);
+            ReadWriteHotelsChunk(gameState, os);
 
             auto targetVersion = os.getHeader().targetVersion;
 
@@ -225,6 +227,7 @@ namespace OpenRCT2
             ReadWriteRestrictedObjectsChunk(gameState, os);
             ReadWritePluginStorageChunk(gameState, os);
             ReadWriteParkDayChunk(gameState, os);
+            ReadWriteHotelsChunk(gameState, os);
             ReadWritePreviewChunk(gameState, os);
             ReadWritePackedObjectsChunk(os);
         }
@@ -883,6 +886,61 @@ namespace OpenRCT2
             if (os.getMode() == OrcaStream::Mode::reading && !found)
             {
                 st = {};
+            }
+        }
+
+        void ReadWriteHotelsChunk(GameState_t& gameState, OrcaStream& os)
+        {
+            auto& st = gameState.hotels;
+            if (os.getMode() == OrcaStream::Mode::writing && st.hotels.empty() && st.bookings.empty())
+            {
+                // Parks without hotels stay identical to upstream saves.
+                return;
+            }
+
+            auto found = os.readWriteChunk(ParkFileChunkType::hotels, [&st](OrcaStream::ChunkStream& cs) {
+                uint32_t chunkVersion = 1;
+                cs.readWrite(chunkVersion);
+                cs.readWrite(st.roomPrice);
+                cs.readWrite(st.lastMinute);
+                cs.readWriteVector(st.hotels, [&cs](Hotel::Building& h) {
+                    cs.readWrite(h.id);
+                    cs.readWrite(h.origin);
+                    cs.readWrite(h.width);
+                    cs.readWrite(h.length);
+                    cs.readWrite(h.baseZ);
+                    cs.readWrite(h.sceneryEntry);
+                    cs.readWrite(h.blockWidth);
+                    cs.readWrite(h.blockLength);
+                    cs.readWrite(h.door);
+                    cs.readWrite(h.hasDoor);
+                    cs.readWrite(h.tilesStanding);
+                    cs.readWrite(h.guestsTonight);
+                    cs.readWrite(h.revenueTonight);
+                    cs.readWrite(h.guestsLastNight);
+                    cs.readWrite(h.revenueLastNight);
+                    cs.readWrite(h.revenueTotal);
+                    cs.readWrite(h.nightsTotal);
+                });
+                cs.readWriteVector(st.bookings, [&cs](Hotel::Booking& b) {
+                    cs.readWrite(b.guest);
+                    cs.readWrite(b.parkEntryTime);
+                    cs.readWrite(b.hotelId);
+                    cs.readWrite(b.nightsLeft);
+                    auto status = static_cast<uint8_t>(b.status);
+                    cs.readWrite(status);
+                    b.status = static_cast<Hotel::BookingStatus>(status);
+                    cs.readWrite(b.night);
+                });
+            });
+
+            if (os.getMode() == OrcaStream::Mode::reading)
+            {
+                if (!found)
+                    st = {};
+                std::sort(st.bookings.begin(), st.bookings.end(), [](const Hotel::Booking& a, const Hotel::Booking& b) {
+                    return a.guest < b.guest;
+                });
             }
         }
 

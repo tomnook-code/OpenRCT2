@@ -98,6 +98,7 @@ namespace OpenRCT2
         editorStepController = 140,
         editorStatusLine = 141,
         parkDay = 200, // fork: realistic park day cycle
+        hotels = 201,  // fork: overnight hotels
 
         // Only used for colour schemes
         staff = 220,

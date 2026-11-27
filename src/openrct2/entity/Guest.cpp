@@ -5774,6 +5774,7 @@ namespace OpenRCT2
 
         outsideOfPark = false;
         parkEntryTime = getGameState().currentTicks;
+        Hotel::OnGuestAdmitted(getGameState(), *this); // fork: overnight hotels
         IncrementGuestsInPark();
         DecrementGuestsHeadingForPark();
         auto intent = Intent(INTENT_ACTION_UPDATE_GUEST_COUNT);

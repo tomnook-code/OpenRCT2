@@ -15,6 +15,7 @@
 #include "core/Random.hpp"
 #include "entity/EntityRegistry.h"
 #include "interface/ZoomLevel.h"
+#include "park/Hotel.h"
 #include "park/ParkDay.h"
 #include "ride/Ride.h"
 #include "ride/RideRatings.h"
@@ -38,6 +39,7 @@ namespace OpenRCT2
     {
         Park::ParkData park{};
         ParkDay::State parkDay{}; // fork: realistic park day cycle
+        Hotel::State hotels{};    // fork: overnight hotels
         Scenario::Options scenarioOptions;
         std::string pluginStorage;
         uint32_t currentTicks{};

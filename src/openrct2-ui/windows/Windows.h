@@ -81,6 +81,7 @@ namespace OpenRCT2::Ui::Windows
     // CustomCurrency
     WindowBase* CustomCurrencyOpen();
     WindowBase* ParkDayOpen(); // fork: realistic park day cycle
+    WindowBase* HotelsOpen();  // fork: overnight hotels
 
     // DateInfoPanel
     WindowBase* dateInfoPanelOpen();

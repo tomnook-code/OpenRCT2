@@ -17,6 +17,7 @@
 #include "../world/Park.h"
 #include "../world/ParkData.h"
 #include "../world/Weather.h"
+#include "Hotel.h"
 
 #include <algorithm>
 #include <array>
@@ -259,7 +260,7 @@ namespace OpenRCT2::ParkDay
         uint32_t onRides = 0;
         for (auto* guest : EntityList<Guest>())
         {
-            if (guest->outsideOfPark)
+            if (guest->outsideOfPark || Hotel::IsStayingGuest(gameState, *guest))
                 continue;
             stragglers++;
             switch (guest->state)
@@ -383,6 +384,10 @@ namespace OpenRCT2::ParkDay
         const auto windDown = s.closeMinute > kWindDownMinutes ? s.closeMinute - kWindDownMinutes : 0;
         if (minute >= windDown || minute < s.openMinute)
             return true;
+
+        // Guests with a hotel room stay until the evening.
+        if (Hotel::IsStayingGuest(gameState, guest))
+            return false;
 
         if (guest.parkEntryTime == -1)
             return false;

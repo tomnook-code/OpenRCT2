@@ -1710,6 +1710,8 @@ const static EnumMap<GameCommand> ActionNameToType = {
     { "parksetname", GameCommand::setParkName },
     { "parksetparameter", GameCommand::setParkOpen },
     { "parkdayset", GameCommand::parkDaySet },
+    { "hotelplace", GameCommand::hotelPlace },
+    { "hotelset", GameCommand::hotelSet },
     { "parksetresearchfunding", GameCommand::setResearchFunding },
     { "pausetoggle", GameCommand::togglePause },
     { "peeppickup", GameCommand::pickupGuest },
