@@ -144,7 +144,9 @@ namespace OpenRCT2
             // Fork: fast-forward through the night when the park day cycle asks for it.
             if (Network::GetMode() == Network::Mode::none && ParkDay::IsFastForwarding(getGameState()))
             {
-                numUpdates = std::max<uint32_t>(numUpdates, 32);
+                // Longer days have more ticks per night, so fast-forward harder (32 updates per frame at 4x).
+                numUpdates = std::max<uint32_t>(
+                    numUpdates, std::clamp<uint32_t>(getGameState().parkDay.settings.dayLength * 8u, 32u, 256u));
             }
         }
 

@@ -881,6 +881,7 @@ namespace OpenRCT2
                 cs.readWrite(st.skipTonight);
                 cs.readWrite(st.settings.dayLength);
                 cs.readWrite(st.lastStragglersOnRides);
+                cs.readWrite(st.dateSubTick);
             });
 
             if (os.getMode() == OrcaStream::Mode::reading && !found)

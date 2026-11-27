@@ -13,7 +13,9 @@
 
 #include <array>
 #include <cstdio>
+#include <cstdlib>
 #include <gtest/gtest.h>
+#include <map>
 #include <memory>
 #include <openrct2/Context.h>
 #include <openrct2/Game.h>
@@ -21,6 +23,7 @@
 #include <openrct2/OpenRCT2.h>
 #include <openrct2/ParkImporter.h>
 #include <openrct2/actions/GameActionRunner.h>
+#include <openrct2/actions/cheats/CheatSetAction.h>
 #include <openrct2/actions/park/ParkDaySetAction.h>
 #include <openrct2/actions/park/ParkSetEntranceFeeAction.h>
 #include <openrct2/actions/park/ParkSetParameterAction.h>
@@ -152,6 +155,10 @@ TEST_F(ParkDayTests, FullDayArrivalsAndClosing)
     ASSERT_EQ(res.error, GameActions::Status::ok);
     gameStateUpdateLogic(); // actions run from outside the update loop are queued for the next tick
     ASSERT_TRUE(ParkDay::IsEnabled(gameState));
+    EXPECT_EQ(gameState.parkDay.settings.dayLength, ParkDay::kDefaultDayLength);
+
+    // Use the short 6.8-minute day here to keep the test fast.
+    RunAction<GameActions::ParkDaySetAction>(ParkDay::Parameter::dayLength, 1u);
 
     // Admission is paid at the gate and rides are free.
     EXPECT_FALSE(Park::RidePricesUnlocked(park));
@@ -276,4 +283,99 @@ TEST_F(ParkDayTests, LongerDaysSlowTheCalendarButKeepWeekStarts)
 
     gameState.parkDay = {};
     EXPECT_EQ(ParkDay::GetMonthTicksIncrement(gameState), 4);
+}
+
+// Tuning tool, not run by default. Simulates one Saturday in bpb.sv6 (134 rides) with a fresh crowd and
+// prints how many rides each visitor managed. Run with:
+//   PARKDAY_LENGTH=24 ./OpenRCT2Tests --gtest_also_run_disabled_tests --gtest_filter='*MeasureRidesPerVisit*'
+// Measured averages: 1x 0.1, 4x 0.9, 8x 2.2, 16x 4.6, 24x 6.9, 32x 9.3 rides per visit.
+TEST_F(ParkDayTests, DISABLED_MeasureRidesPerVisit)
+{
+    const char* parkName = std::getenv("PARKDAY_PARK") ? std::getenv("PARKDAY_PARK") : "bpb.sv6";
+    auto context = StartGame(TestData::GetParkPath(parkName));
+    ASSERT_NE(context.get(), nullptr);
+    auto& gameState = getGameState();
+    auto& park = gameState.park;
+    RunAction<GameActions::ParkSetParameterAction>(GameActions::ParkParameter::open);
+    RunAction<GameActions::CheatSetAction>(CheatType::removeAllGuests);
+    RunAction<GameActions::ParkDaySetAction>(ParkDay::Parameter::enabled, 1u);
+    gameStateUpdateLogic();
+    std::printf("guests after clear=%u\n", park.numGuestsInPark);
+    if (const char* len = std::getenv("PARKDAY_LENGTH"))
+    {
+        RunAction<GameActions::ParkDaySetAction>(ParkDay::Parameter::dayLength, static_cast<uint32_t>(std::atoi(len)));
+        gameStateUpdateLogic();
+    }
+    std::printf(
+        "dayLength=%d ticksPerDay=%u rides=%zu\n", gameState.parkDay.settings.dayLength, ParkDay::GetTicksPerDay(gameState),
+        static_cast<size_t>(RideGetCount()));
+    SetClock(gameState, 12, 8 * 60);
+    gameState.parkDay.lastMinute = 0xFFFF;
+    const uint32_t startTick = gameState.currentTicks;
+    std::map<std::pair<uint16_t, uint32_t>, uint32_t> maxRides;
+    uint32_t tick = 0;
+    while (ParkDay::GetDayIndex(gameState) == 12 && ParkDay::GetMinuteOfDay(gameState) < 22 * 60)
+    {
+        gameStateUpdateLogic();
+        if ((tick++ & 31) == 0)
+        {
+            for (auto* g : EntityList<Guest>())
+            {
+                if (g->outsideOfPark || g->parkEntryTime == -1 || static_cast<uint32_t>(g->parkEntryTime) < startTick)
+                    continue;
+                auto key = std::make_pair(g->id.ToUnderlying(), static_cast<uint32_t>(g->parkEntryTime));
+                maxRides[key] = std::max<uint32_t>(maxRides[key], g->guestNumRides);
+            }
+        }
+    }
+    std::map<uint32_t, uint32_t> hist;
+    uint64_t sum = 0;
+    for (auto& [k, v] : maxRides)
+    {
+        sum += v;
+        hist[std::min<uint32_t>(v, 12)]++;
+    }
+    std::printf(
+        "visitors=%zu avgRides=%.2f target=%u admissions=%u\n", maxRides.size(),
+        maxRides.empty() ? 0.0 : double(sum) / maxRides.size(), gameState.parkDay.dailyTarget,
+        gameState.parkDay.admissionsToday);
+    for (auto& [k, v] : hist)
+        std::printf("  rides=%u guests=%u\n", k, v);
+}
+
+TEST_F(ParkDayTests, DayLengthsCycleAndAreNamed)
+{
+    EXPECT_EQ(ParkDay::GetDayLengthName(1), "6.8 min");
+    EXPECT_EQ(ParkDay::GetDayLengthName(24), "2 h 43 min");
+    EXPECT_EQ(ParkDay::GetNextDayLength(16), 24);
+    EXPECT_EQ(ParkDay::GetNextDayLength(32), 1);
+    ParkDay::Settings s;
+    EXPECT_TRUE(ParkDay::IsValidParameter(s, ParkDay::Parameter::dayLength, 24));
+    EXPECT_FALSE(ParkDay::IsValidParameter(s, ParkDay::Parameter::dayLength, 3));
+}
+
+TEST_F(ParkDayTests, VeryLongDaysHoldTheCalendarBetweenSteps)
+{
+    auto& gameState = getGameState();
+    gameState.parkDay = {};
+    gameState.parkDay.settings.enabled = true;
+    ParkDay::ApplyParameter(gameState, ParkDay::Parameter::dayLength, 24);
+    EXPECT_EQ(ParkDay::GetTicksPerDay(gameState), 16384u * 24);
+
+    gameState.date = Date{ 0, 4 };
+    int weekStarts = 0;
+    int monthStarts = 0;
+    int dayStarts = 0;
+    for (uint32_t i = 0; i < ParkDay::GetTicksPerDay(gameState); i++)
+    {
+        DateUpdate(gameState);
+        weekStarts += gameState.date.IsWeekStart() ? 1 : 0;
+        monthStarts += gameState.date.IsMonthStart() ? 1 : 0;
+        dayStarts += gameState.date.IsDayStart() ? 1 : 0;
+    }
+    // Exactly the same calendar events as a vanilla month, however long the day is.
+    EXPECT_EQ(weekStarts, 4);
+    EXPECT_EQ(monthStarts, 1);
+    EXPECT_EQ(dayStarts, Date::GetDaysInMonth(0) - 1); // March: days 2 to 31 start inside the month
+    gameState.parkDay = {};
 }
