@@ -154,6 +154,8 @@ TEST_F(HotelTests, GuestsStayOvernightAndComeBackOut)
 
     RunAction<GameActions::ParkSetParameterAction>(GameActions::ParkParameter::open);
     ASSERT_EQ(RunAction<GameActions::ParkDaySetAction>(ParkDay::Parameter::enabled, 1u).error, GameActions::Status::ok);
+    // The shortest day keeps the simulation quick; hotel timing only depends on the clock.
+    ASSERT_EQ(RunAction<GameActions::ParkDaySetAction>(ParkDay::Parameter::dayLength, 1u).error, GameActions::Status::ok);
     gameStateUpdateLogic();
     ASSERT_TRUE(ParkDay::IsEnabled(gameState));
     RunAction<GameActions::ParkSetEntranceFeeAction>(0);
