@@ -711,6 +711,14 @@ namespace OpenRCT2
             }
         }
 
+        // Fork: a guest asleep in a hotel is shown at the hotel.
+        if (auto hotelView = Hotel::GetGuestHotelView(getGameState(), peep); hotelView && overallFocus)
+        {
+            focus = Focus(*hotelView);
+            window->viewportTargetSprite = EntityId::GetNull();
+            overallFocus = false;
+        }
+
         if (peep.x == kLocationNull && overallFocus)
         {
             auto ride = GetRide(peep.currentRide);

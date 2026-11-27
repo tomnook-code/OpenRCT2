@@ -101,6 +101,8 @@ namespace OpenRCT2
         setRestrictedScenery,
         setRideVisibility,
         parkDaySet, // fork: realistic park day cycle
+        hotelPlace, // fork: overnight hotels
+        hotelSet,   // fork: overnight hotels
         count,
     };
 }

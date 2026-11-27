@@ -25,7 +25,7 @@
 
 namespace OpenRCT2::Ui::Windows
 {
-    static constexpr ScreenSize kWindowSize = { 260, 230 };
+    static constexpr ScreenSize kWindowSize = { 260, 250 };
     static constexpr int32_t kStepMinutes = 30;
 
     enum WindowParkDayWidgetIdx : WidgetIndex
@@ -46,6 +46,7 @@ namespace OpenRCT2::Ui::Windows
         WIDX_DAY_LENGTH,
         WIDX_AUTO_SKIP,
         WIDX_SKIP_NIGHT,
+        WIDX_HOTELS,
     };
 
     // clang-format off
@@ -57,7 +58,8 @@ namespace OpenRCT2::Ui::Windows
         makeSpinnerWidgets        ({150,  70}, {100, 12}, WidgetType::spinner, WindowColour::secondary), // park closes (3 widgets)
         makeWidget                ({150,  86}, {100, 12}, WidgetType::button,  WindowColour::secondary), // day length
         Widgets::Checkbox         ({ 10, 104}, {240, 12},                      WindowColour::secondary),
-        makeWidget                ({ 10, 120}, {240, 14}, WidgetType::button,  WindowColour::secondary)
+        makeWidget                ({ 10, 120}, {240, 14}, WidgetType::button,  WindowColour::secondary),
+        makeWidget                ({ 10, 230}, {240, 14}, WidgetType::button,  WindowColour::secondary)  // hotels
     );
     // clang-format on
 
@@ -86,6 +88,7 @@ namespace OpenRCT2::Ui::Windows
             widgets[WIDX_ENABLED].setString("Realistic day cycle (gate admission, free rides)");
             widgets[WIDX_AUTO_SKIP].setString("Skip nights automatically");
             widgets[WIDX_SKIP_NIGHT].setString("Skip to tomorrow morning");
+            widgets[WIDX_HOTELS].setString("Hotels...");
             WindowInitScrollWidgets(*this);
         }
 
@@ -110,6 +113,9 @@ namespace OpenRCT2::Ui::Windows
                     break;
                 case WIDX_SKIP_NIGHT:
                     setParameter(ParkDay::Parameter::skipTonight, st.skipTonight ? 0 : 1);
+                    break;
+                case WIDX_HOTELS:
+                    HotelsOpen();
                     break;
                 case WIDX_DAY_LENGTH:
                 {

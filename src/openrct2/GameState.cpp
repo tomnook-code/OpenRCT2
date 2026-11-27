@@ -61,6 +61,7 @@ namespace OpenRCT2
         gInMapInitCode = true;
         gameState.currentTicks = 0;
         gameState.parkDay = {};
+        gameState.hotels = {};
 
         MapInit(mapSize, isInTrackDesignerOrManager() ? Drawing::Colour::darkBlue : Drawing::Colour::black);
         Park::Initialise(gameState.park, gameState);

@@ -216,6 +216,7 @@
     <ClCompile Include="windows\ObjectLoadError.cpp" />
     <ClCompile Include="windows\Options.cpp" />
     <ClCompile Include="windows\OverwritePrompt.cpp" />
+    <ClCompile Include="windows\Hotels.cpp" />
     <ClCompile Include="windows\Park.cpp" />
     <ClCompile Include="windows\ParkDay.cpp" />
     <ClCompile Include="windows\ParkInfoPanel.cpp" />

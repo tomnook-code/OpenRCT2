@@ -23,6 +23,7 @@
 #include "../management/Finance.h"
 #include "../management/Marketing.h"
 #include "../management/Research.h"
+#include "../park/Hotel.h"
 #include "../park/ParkDay.h"
 #include "../profiling/Profiling.h"
 #include "../ride/Ride.h"
@@ -369,6 +370,9 @@ namespace OpenRCT2::Park
         }
 
         generateGuests(park, gameState);
+
+        // Fork: overnight hotels check guests in and out.
+        Hotel::Update(gameState);
     }
 
     uint32_t CalculateParkSize(ParkData& park)

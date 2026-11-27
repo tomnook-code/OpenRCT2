@@ -1657,6 +1657,16 @@ namespace OpenRCT2::PathFinding
      */
     int32_t GuestPathFindParkEntranceLeaving(Peep& peep, uint8_t edges)
     {
+        // Fork: guests with a hotel room tonight walk to the hotel door instead of the exit.
+        if (auto hotelDoor = Hotel::GetDestination(getGameState(), peep))
+        {
+            Direction hotelDirection = ChooseDirection(
+                TileCoordsXYZ{ peep.nextLoc }, *hotelDoor, peep, true, RideId::GetNull());
+            if (hotelDirection == kInvalidDirection)
+                return GuestPathfindAimless(peep, edges);
+            return PeepMoveOneTile(hotelDirection, peep);
+        }
+
         TileCoordsXYZ entranceGoal{};
         if (peep.peepFlags.has(PeepFlag::parkEntranceChosen))
         {
