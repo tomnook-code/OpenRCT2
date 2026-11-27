@@ -15,6 +15,7 @@
 #include "core/Random.hpp"
 #include "entity/EntityRegistry.h"
 #include "interface/ZoomLevel.h"
+#include "park/ParkDay.h"
 #include "ride/Ride.h"
 #include "ride/RideRatings.h"
 #include "scenario/ScenarioOptions.h"
@@ -36,6 +37,7 @@ namespace OpenRCT2
     struct GameState_t
     {
         Park::ParkData park{};
+        ParkDay::State parkDay{}; // fork: realistic park day cycle
         Scenario::Options scenarioOptions;
         std::string pluginStorage;
         uint32_t currentTicks{};

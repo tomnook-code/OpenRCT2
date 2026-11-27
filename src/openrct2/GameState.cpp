@@ -60,6 +60,7 @@ namespace OpenRCT2
 
         gInMapInitCode = true;
         gameState.currentTicks = 0;
+        gameState.parkDay = {};
 
         MapInit(mapSize, isInTrackDesignerOrManager() ? Drawing::Colour::darkBlue : Drawing::Colour::black);
         Park::Initialise(gameState.park, gameState);
@@ -137,6 +138,12 @@ namespace OpenRCT2
             {
                 // Update more often if game speed is above normal.
                 numUpdates = 1 << (gGameSpeed - 1);
+            }
+
+            // Fork: fast-forward through the night when the park day cycle asks for it.
+            if (Network::GetMode() == Network::Mode::none && ParkDay::IsFastForwarding(getGameState()))
+            {
+                numUpdates = std::max<uint32_t>(numUpdates, 32);
             }
         }
 

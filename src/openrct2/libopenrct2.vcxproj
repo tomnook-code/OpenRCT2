@@ -112,6 +112,7 @@
     <ClInclude Include="actions\park\ParkSetLoanAction.h" />
     <ClInclude Include="actions\park\ParkSetNameAction.h" />
     <ClInclude Include="actions\park\ParkSetParameterAction.h" />
+    <ClInclude Include="actions\park\ParkDaySetAction.h" />
     <ClInclude Include="actions\park\ParkSetResearchFundingAction.h" />
     <ClInclude Include="actions\peep\GuestSetFlagsAction.h" />
     <ClInclude Include="actions\peep\GuestSetNameAction.h" />
@@ -446,6 +447,7 @@
     <ClInclude Include="ParkImporter.h" />
     <ClInclude Include="park\Legacy.h" />
     <ClInclude Include="park\ParkFile.h" />
+    <ClInclude Include="park\ParkDay.h" />
     <ClInclude Include="park\ParkPreview.h" />
     <ClInclude Include="peep\Guest.h" />
     <ClInclude Include="peep\GuestPathfinding.h" />
@@ -789,6 +791,7 @@
     <ClCompile Include="actions\park\ParkSetLoanAction.cpp" />
     <ClCompile Include="actions\park\ParkSetNameAction.cpp" />
     <ClCompile Include="actions\park\ParkSetParameterAction.cpp" />
+    <ClCompile Include="actions\park\ParkDaySetAction.cpp" />
     <ClCompile Include="actions\park\ParkSetResearchFundingAction.cpp" />
     <ClCompile Include="actions\peep\GuestSetFlagsAction.cpp" />
     <ClCompile Include="actions\peep\GuestSetNameAction.cpp" />
@@ -1159,6 +1162,7 @@
     <ClCompile Include="ParkImporter.cpp" />
     <ClCompile Include="park\Legacy.cpp" />
     <ClCompile Include="park\ParkFile.cpp" />
+    <ClCompile Include="park\ParkDay.cpp" />
     <ClCompile Include="park\ParkPreview.cpp" />
     <ClCompile Include="peep\GuestPathfinding.cpp" />
     <ClCompile Include="peep\PeepActionFormat.cpp" />

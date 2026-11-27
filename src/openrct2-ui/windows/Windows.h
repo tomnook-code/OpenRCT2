@@ -80,6 +80,7 @@ namespace OpenRCT2::Ui::Windows
 
     // CustomCurrency
     WindowBase* CustomCurrencyOpen();
+    WindowBase* ParkDayOpen(); // fork: realistic park day cycle
 
     // DateInfoPanel
     WindowBase* dateInfoPanelOpen();

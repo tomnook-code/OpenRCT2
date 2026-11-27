@@ -99,6 +99,7 @@ namespace OpenRCT2
         restrictedObjects       = 0x37,
         pluginStorage           = 0x38,
         preview                 = 0x39,
+        parkDay                 = 0xD0, // fork: realistic park day cycle
         packedObjects           = 0x80
         // clang-format on
     };
@@ -180,6 +181,7 @@ namespace OpenRCT2
             ReadWriteCheatsChunk(gameState, os);
             ReadWriteRestrictedObjectsChunk(gameState, os);
             ReadWritePluginStorageChunk(gameState, os);
+            ReadWriteParkDayChunk(gameState, os);
 
             auto targetVersion = os.getHeader().targetVersion;
 
@@ -222,6 +224,7 @@ namespace OpenRCT2
             ReadWriteCheatsChunk(gameState, os);
             ReadWriteRestrictedObjectsChunk(gameState, os);
             ReadWritePluginStorageChunk(gameState, os);
+            ReadWriteParkDayChunk(gameState, os);
             ReadWritePreviewChunk(gameState, os);
             ReadWritePackedObjectsChunk(os);
         }
@@ -843,6 +846,43 @@ namespace OpenRCT2
                 auto& scriptEngine = GetContext()->GetScriptEngine();
                 scriptEngine.SetParkStorageFromJSON(gameState.pluginStorage, gameState.scenarioFileName);
 #endif
+            }
+        }
+
+        void ReadWriteParkDayChunk(GameState_t& gameState, OrcaStream& os)
+        {
+            auto& st = gameState.parkDay;
+            if (os.getMode() == OrcaStream::Mode::writing && !st.settings.enabled)
+            {
+                // Parks that don't use the day cycle stay identical to upstream saves.
+                return;
+            }
+
+            auto found = os.readWriteChunk(ParkFileChunkType::parkDay, [&st](OrcaStream::ChunkStream& cs) {
+                uint32_t chunkVersion = 1;
+                cs.readWrite(chunkVersion);
+                cs.readWrite(st.settings.enabled);
+                cs.readWrite(st.settings.openMinute);
+                cs.readWrite(st.settings.lastEntryMinute);
+                cs.readWrite(st.settings.closeMinute);
+                cs.readWrite(st.settings.autoSkipNight);
+                cs.readWrite(st.dayIndex);
+                cs.readWrite(st.dailyTarget);
+                cs.readWrite(st.targetSet);
+                cs.readWrite(st.arrivalsToday);
+                cs.readWrite(st.admissionsToday);
+                cs.readWrite(st.peakGuestsToday);
+                cs.readWrite(st.arrivalAccumulator);
+                cs.readWrite(st.lastMinute);
+                cs.readWrite(st.lastStragglers);
+                cs.readWrite(st.skipTonight);
+                cs.readWrite(st.settings.dayLength);
+                cs.readWrite(st.lastStragglersOnRides);
+            });
+
+            if (os.getMode() == OrcaStream::Mode::reading && !found)
+            {
+                st = {};
             }
         }
 

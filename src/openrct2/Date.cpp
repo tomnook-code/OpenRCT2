@@ -74,11 +74,13 @@ int32_t Date::GetYear() const
 
 bool Date::IsDayStart() const
 {
-    if (monthTicks < 4)
+    // Fork: the park day cycle can slow the calendar down.
+    const int32_t increment = ParkDay::GetMonthTicksIncrement(getGameState());
+    if (monthTicks < increment)
     {
         return false;
     }
-    int32_t prevMonthTick = monthTicks - 4;
+    int32_t prevMonthTick = monthTicks - increment;
     int32_t currentMonth = GetMonth();
     int32_t currentDaysInMonth = GetDaysInMonth(currentMonth);
     return ((currentDaysInMonth * monthTicks) >> 16 != (currentDaysInMonth * prevMonthTick) >> 16);
@@ -108,7 +110,7 @@ int32_t Date::GetDaysInMonth(int32_t month)
 
 void OpenRCT2::DateUpdate(GameState_t& gameState)
 {
-    int32_t monthTicks = gameState.date.monthTicks + kMonthTicksIncrement;
+    int32_t monthTicks = gameState.date.monthTicks + ParkDay::GetMonthTicksIncrement(gameState);
     if (monthTicks > kMaskMonthTicks)
     {
         gameState.date.monthTicks = 0;

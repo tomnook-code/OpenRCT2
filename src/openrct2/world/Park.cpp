@@ -23,6 +23,7 @@
 #include "../management/Finance.h"
 #include "../management/Marketing.h"
 #include "../management/Research.h"
+#include "../park/ParkDay.h"
 #include "../profiling/Profiling.h"
 #include "../ride/Ride.h"
 #include "../ride/RideData.h"
@@ -214,8 +215,25 @@ namespace OpenRCT2::Park
 
     static void generateGuests(ParkData& park, GameState_t& gameState)
     {
+        // Fork: realistic day cycle replaces the random trickle with a daily arrival curve.
+        if (ParkDay::IsEnabled(gameState))
+        {
+            auto arrivals = ParkDay::Update(gameState);
+            bool difficultGeneration = park.flags.has(ParkFlag::difficultGuestGeneration);
+            for (uint32_t i = 0; i < arrivals; i++)
+            {
+                if (!difficultGeneration || park.suggestedGuestMaximum + 150 >= park.numGuestsInPark)
+                {
+                    GenerateGuest();
+                }
+            }
+            if (!ParkDay::IsAcceptingArrivals(gameState))
+            {
+                return;
+            }
+        }
         // Generate a new guest for some probability
-        if (static_cast<int32_t>(ScenarioRand() & 0xFFFF) < park.guestGenerationProbability)
+        else if (static_cast<int32_t>(ScenarioRand() & 0xFFFF) < park.guestGenerationProbability)
         {
             bool difficultGeneration = park.flags.has(ParkFlag::difficultGuestGeneration);
             if (!difficultGeneration || park.suggestedGuestMaximum + 150 >= park.numGuestsInPark)
@@ -743,6 +761,11 @@ namespace OpenRCT2::Park
 
     bool RidePricesUnlocked(const ParkData& park)
     {
+        // Fork: the day cycle always uses pay-at-the-gate admission with free rides.
+        if (ParkDay::IsEnabled())
+        {
+            return false;
+        }
         if (park.flags.has(ParkFlag::unlockAllPrices))
         {
             return true;
@@ -756,6 +779,10 @@ namespace OpenRCT2::Park
 
     bool EntranceFeeUnlocked(const ParkData& park)
     {
+        if (ParkDay::IsEnabled())
+        {
+            return true;
+        }
         if (park.flags.has(ParkFlag::unlockAllPrices))
         {
             return true;
