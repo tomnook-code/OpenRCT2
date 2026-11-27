@@ -1,0 +1,59 @@
+name: Publish develop build
+# After CI succeeds on develop, put the Windows x64 portable zip on a fixed
+# "develop-latest" pre-release so it can be downloaded without signing in.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: CI run ID to publish (must be a run on develop)
+        required: true
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: publish-develop-build
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUN_ID: ${{ inputs.run_id || github.event.workflow_run.id }}
+    steps:
+      - name: Read CI run
+        id: run
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" > run.json
+          branch=$(jq -r .head_branch run.json)
+          if [ "$branch" != "develop" ]; then echo "Run $RUN_ID is on $branch, not develop"; exit 1; fi
+          echo "sha=$(jq -r .head_sha run.json)" >> "$GITHUB_OUTPUT"
+      - name: Download Windows x64 portable artifact
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-Windows-portable-x64'
+          run-id: ${{ env.RUN_ID }}
+          github-token: ${{ github.token }}
+          path: dl
+          merge-multiple: true
+      - name: Publish develop-latest release
+        env:
+          SHA: ${{ steps.run.outputs.sha }}
+        run: |
+          zip=$(find dl -name '*windows-portable-x64.zip' | head -n1)
+          if [ -z "$zip" ]; then echo "No portable zip found"; ls -R dl; exit 1; fi
+          cp "$zip" OpenRCT2-develop-windows-portable-x64.zip
+          printf '%s\n' "$SHA" > build-sha.txt
+          short=${SHA:0:7}
+          gh release delete develop-latest --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes || true
+          gh release create develop-latest \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$SHA" \
+            --prerelease \
+            --title "Latest develop build ($short)" \
+            --notes "Windows x64 portable build of develop at $SHA (CI run $RUN_ID). Built $(date -u '+%Y-%m-%d %H:%M UTC')." \
+            OpenRCT2-develop-windows-portable-x64.zip build-sha.txt
